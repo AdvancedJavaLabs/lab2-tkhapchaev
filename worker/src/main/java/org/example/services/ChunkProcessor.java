@@ -7,6 +7,7 @@ import opennlp.tools.tokenize.TokenizerModel;
 import org.example.models.Chunk;
 import org.example.models.ProcessingResult;
 import org.example.utilities.SentimentAnalysisHelper;
+import org.example.utilities.TopWordsHelper;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -59,7 +60,7 @@ public class ChunkProcessor {
             Map<String, Long> wordFrequency = new HashMap<>();
 
             for (var token : tokensLower) {
-                if (token.matches("\\w+")) {
+                if (token.matches("\\w+") && !Arrays.asList(TopWordsHelper.stopWords).contains(token)) {
                     wordFrequency.put(token, wordFrequency.getOrDefault(token, 0L) + 1);
                 }
             }

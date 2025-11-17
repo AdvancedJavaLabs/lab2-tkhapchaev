@@ -1,7 +1,7 @@
 package org.example.utilities;
 
 public class SentimentAnalysisHelper {
-    public static String[] positiveWords = {
+    public final static String[] positiveWords = {
             "good", "happy", "excellent", "great", "nice", "fantastic", "wonderful", "amazing",
             "love", "joy", "pleasure", "awesome", "delightful", "brilliant", "perfect",
             "positive", "fortunate", "cheerful", "favorable", "smile", "successful", "optimistic",
@@ -26,7 +26,7 @@ public class SentimentAnalysisHelper {
             "welcome", "wonder", "wonderful", "zeal"
     };
 
-    public static String[] negativeWords = {
+    public final static String[] negativeWords = {
             "bad", "sad", "poor", "terrible", "awful", "horrible", "worst", "hate",
             "angry", "pain", "disappointing", "unhappy", "miserable", "tragic", "unfortunate",
             "negative", "stress", "problem", "failure", "frustrated", "fear", "disgust",
