@@ -2,6 +2,7 @@ package org.example.models;
 
 import lombok.Getter;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @Getter
@@ -12,6 +13,8 @@ public class SubmissionInfo {
     private long chunkCount;
 
     private SubmissionActions submissionActions;
+
+    private Instant submittedAt;
 
     public SubmissionInfo(UUID textId, long fileSize, long chunkCount, SubmissionActions submissionActions) {
         if (textId == null) {
@@ -36,5 +39,7 @@ public class SubmissionInfo {
         this.chunkCount = chunkCount;
 
         this.submissionActions = submissionActions;
+
+        submittedAt = Instant.now();
     }
 }

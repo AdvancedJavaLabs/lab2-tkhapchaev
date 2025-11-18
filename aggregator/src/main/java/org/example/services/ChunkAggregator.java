@@ -24,7 +24,7 @@ public class ChunkAggregator {
         }
 
         var textId = processedChunk.getSubmissionInfo().getTextId();
-        var totalChunks = processedChunk.getSubmissionInfo().getChunkCount();
+        var chunkCount = processedChunk.getSubmissionInfo().getChunkCount();
 
         chunksByTextId.compute(textId, (id, chunks) -> {
             if (chunks == null) {
@@ -36,11 +36,11 @@ public class ChunkAggregator {
             return chunks;
         });
 
-        List<Chunk> currentChunks = chunksByTextId.get(textId);
-        currentChunks.sort(Comparator.comparingLong(Chunk::getId));
+        var chunks = chunksByTextId.get(textId);
+        chunks.sort(Comparator.comparingLong(Chunk::getId));
 
-        if (currentChunks.size() >= totalChunks) {
-            var aggregatedResult = aggregate(currentChunks);
+        if (chunks.size() >= chunkCount) {
+            var aggregatedResult = aggregate(chunks);
             kafkaProducer.publishAggregatedResult(aggregatedResult);
             chunksByTextId.remove(textId);
         }
@@ -150,10 +150,8 @@ public class ChunkAggregator {
                     }
                 }
 
-                var descendingOrder = submissionActions.isShouldSortSentencesDescending();
-
                 Map<String, Long> sortedSentences = combinedSentences.entrySet().stream()
-                        .sorted((i, j) -> descendingOrder
+                        .sorted((i, j) -> submissionActions.isShouldSortSentencesDescending()
                                 ? Long.compare(j.getValue(), i.getValue())
                                 : Long.compare(i.getValue(), j.getValue()))
                         .collect(Collectors.toMap(

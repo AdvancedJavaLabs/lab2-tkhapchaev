@@ -6,4 +6,6 @@ import lombok.Data;
 public class AggregatedResult {
     private ProcessingResult processingResult;
     private SubmissionInfo submissionInfo;
+
+    private long totalTimeMillis;
 }

@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class ChunkProcessor {
@@ -19,6 +20,8 @@ public class ChunkProcessor {
 
     private final TokenizerME tokenizer;
     private final NameFinderME nameFinder;
+
+    private final String wordRegex = "[\\w'@-]+";
 
     public ChunkProcessor(KafkaProducer kafkaProducer) throws IOException {
         this.kafkaProducer = kafkaProducer;
@@ -49,18 +52,18 @@ public class ChunkProcessor {
         var processingResult = new ProcessingResult();
 
         var text = String.join(" ", submittedChunk.getContent());
-        var tokens = tokenizer.tokenize(text);
-        var tokensLower = Arrays.stream(tokens).map(String::toLowerCase).toArray(String[]::new);
+        var tokens = Arrays.stream(tokenizer.tokenize(text)).map(String::toLowerCase).toArray(String[]::new);
 
         if (submissionActions.isShouldCountWords()) {
-            processingResult.setWordCount((long) tokens.length);
+            var wordCount = Arrays.stream(tokens).filter(token -> token.matches(wordRegex)).count();
+            processingResult.setWordCount(wordCount);
         }
 
         if (submissionActions.isShouldTopWords()) {
             Map<String, Long> wordFrequency = new HashMap<>();
 
-            for (var token : tokensLower) {
-                if (token.matches("\\w+") && !Arrays.asList(TopWordsHelper.stopWords).contains(token)) {
+            for (var token : tokens) {
+                if (token.matches(wordRegex) && !Arrays.asList(TopWordsHelper.stopWords).contains(token)) {
                     wordFrequency.put(token, wordFrequency.getOrDefault(token, 0L) + 1);
                 }
             }
@@ -69,7 +72,12 @@ public class ChunkProcessor {
                     .stream()
                     .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
                     .limit(submissionActions.getTopN())
-                    .collect(LinkedHashMap::new, (map, entry) -> map.put(entry.getKey(), entry.getValue()), LinkedHashMap::putAll);
+                    .collect(Collectors.toMap(
+                            Map.Entry::getKey,
+                            Map.Entry::getValue,
+                            (i, j) -> i,
+                            LinkedHashMap::new
+                    ));
 
             processingResult.setTopWords(sortedTopWords);
         }
@@ -77,7 +85,7 @@ public class ChunkProcessor {
         if (submissionActions.isShouldAnalyzeSentiment()) {
             var score = 0;
 
-            for (var token : tokensLower) {
+            for (var token : tokens) {
                 if (Arrays.asList(SentimentAnalysisHelper.positiveWords).contains(token)) {
                     score++;
                 } else if (Arrays.asList(SentimentAnalysisHelper.negativeWords).contains(token)) {
@@ -101,8 +109,8 @@ public class ChunkProcessor {
                 var sentenceTokens = tokenizer.tokenize(sentence);
                 var nameSpans = nameFinder.find(sentenceTokens);
 
-                for (var span : nameSpans) {
-                    for (int i = span.getStart(); i < span.getEnd(); i++) {
+                for (var nameSpan : nameSpans) {
+                    for (int i = nameSpan.getStart(); i < nameSpan.getEnd(); i++) {
                         sentenceTokens[i] = submissionActions.getNameReplacement();
                     }
                 }
@@ -118,9 +126,9 @@ public class ChunkProcessor {
 
             submittedChunk.getContent().stream()
                     .sorted((sentence1, sentence2) -> {
-                        var compare = Integer.compare(sentence1.length(), sentence2.length());
+                        var cmp = Integer.compare(sentence1.length(), sentence2.length());
 
-                        return submissionActions.isShouldSortSentencesDescending() ? -compare : compare;
+                        return submissionActions.isShouldSortSentencesDescending() ? -cmp : cmp;
                     })
                     .forEach(sentence -> sentenceMap.put(sentence, (long) sentence.length()));
 

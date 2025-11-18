@@ -3,6 +3,7 @@ package org.example.services;
 import opennlp.tools.sentdetect.SentenceDetectorME;
 import opennlp.tools.sentdetect.SentenceModel;
 import org.example.models.Chunk;
+import org.example.utilities.SentenceDetectionHelper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -45,6 +46,7 @@ public class SentenceChunker {
 
         var detectedSpans = sentenceDetector.sentPosDetect(text);
         var currentChunkSentences = new ArrayList<String>();
+        var buffer = new StringBuilder();
 
         for (var detectedSpan : detectedSpans) {
             var sentence = text.substring(detectedSpan.getStart(), detectedSpan.getEnd()).trim();
@@ -53,13 +55,40 @@ public class SentenceChunker {
                 continue;
             }
 
-            currentChunkSentences.add(sentence);
+            var endsWithAbbreviation = false;
+
+            for (var abbreviation : SentenceDetectionHelper.abbreviations) {
+                if (sentence.toLowerCase().endsWith(abbreviation)) {
+                    endsWithAbbreviation = true;
+
+                    break;
+                }
+            }
+
+            if (endsWithAbbreviation) {
+                if (!buffer.isEmpty()) {
+                    buffer.append(" ");
+                }
+
+                buffer.append(sentence);
+            } else {
+                if (!buffer.isEmpty()) {
+                    sentence = buffer + " " + sentence;
+                    buffer.setLength(0);
+                }
+
+                currentChunkSentences.add(sentence);
+            }
 
             if (currentChunkSentences.size() >= maxSentencesPerChunk) {
                 chunks.add(new Chunk(chunkId, new ArrayList<>(currentChunkSentences)));
                 currentChunkSentences.clear();
                 chunkId++;
             }
+        }
+
+        if (!buffer.isEmpty()) {
+            currentChunkSentences.add(buffer.toString());
         }
 
         if (!currentChunkSentences.isEmpty()) {
