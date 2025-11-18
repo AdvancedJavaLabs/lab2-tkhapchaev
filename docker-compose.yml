@@ -149,21 +149,3 @@ services:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     ports:
       - "8093:8080"
-
-  worker-11:
-    build: ./worker
-    depends_on:
-      - kafka
-    environment:
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-    ports:
-      - "8094:8080"
-
-  worker-12:
-    build: ./worker
-    depends_on:
-      - kafka
-    environment:
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-    ports:
-      - "8095:8080"
